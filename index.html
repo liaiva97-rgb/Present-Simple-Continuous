@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Impostor Schedule</title>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --purple: #6c5ce7; --pink: #fd79a8; --yellow: #fdcb6e;
+    --green: #00b894; --red: #e17055; --ink: #2d3436;
+    --paper: #fffdf5; --line: #cfe0ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Nunito', sans-serif; max-width: 900px; margin: 1rem auto; padding: 1rem;
+    background: linear-gradient(135deg, #eef2ff 0%, #fdf2f8 100%);
+    color: var(--ink); min-height: 100vh; overflow-x: hidden;
+  }
+  h1 { text-align: center; color: var(--purple); font-weight: 800; font-size: 2.2rem; margin: .5rem 0 1rem; text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(108,92,231,.15); }
+  .score-bar { display: flex; justify-content: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .score-pill { background: #fff; padding: .5rem 1rem; border-radius: 20px; font-weight: 800; color: var(--purple); box-shadow: 0 4px 12px rgba(108,92,231,.15); display: flex; align-items: center; gap: .4rem; }
+  .step { background: rgba(255,255,255,.85); backdrop-filter: blur(10px); border-radius: 24px; padding: 1.5rem; margin: 1rem 0; box-shadow: 0 10px 30px rgba(108,92,231,.12); border: 1px solid rgba(255,255,255,.6); animation: fadeIn .4s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .hidden { display: none !important; }
+  h2 { margin-top: 0; color: var(--purple); font-weight: 800; }
+  .progress { text-align: center; font-weight: 800; color: var(--purple); margin: .5rem 0 1rem; font-size: 1.05rem; background: #eef2ff; padding: .5rem 1rem; border-radius: 20px; }
+  .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; align-items: start; }
+  @media (max-width: 700px) { .layout { grid-template-columns: 1fr; } }
+
+  .notebook { background: var(--paper); border-radius: 12px; padding: 1rem 1rem 1rem 2.6rem; position: relative; box-shadow: 0 8px 20px rgba(0,0,0,.1); background-image: repeating-linear-gradient(transparent, transparent 27px, var(--line) 27px, var(--line) 28px); background-position: 0 8px; min-height: 200px; }
+  .notebook::before { content: ''; position: absolute; left: 1.4rem; top: 0; bottom: 0; width: 2px; background: #ffb3c1; }
+  .notebook::after { content: ''; position: absolute; left: .4rem; top: 1rem; bottom: 1rem; width: 14px; background-image: radial-gradient(circle, #bbb 3px, transparent 4px); background-size: 14px 22px; background-repeat: repeat-y; }
+  .notebook .title { font-family: 'Caveat', cursive; font-size: 1.8rem; color: var(--purple); margin-bottom: .3rem; line-height: 1; }
+  .notebook .sub { font-size: .8rem; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: .6rem; }
+  .notebook ul { list-style: none; padding: 0; margin: 0; font-family: 'Caveat', cursive; font-size: 1.35rem; line-height: 28px; color: #3d3d5c; }
+  .notebook li { position: relative; padding-left: 1.4rem; }
+  .notebook li::before { content: '✎'; position: absolute; left: 0; color: var(--pink); font-size: 1rem; }
+  .notebook li.now { color: var(--purple); font-weight: 700; }
+  .notebook li.now::before { content: '👉'; color: var(--purple); }
+
+  .story-card { width: 260px; margin: 0 auto; background: #fff; border-radius: 22px; padding: 10px; box-shadow: 0 12px 30px rgba(108,92,231,.25); }
+  .story-ring { background: linear-gradient(45deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5); padding: 4px; border-radius: 20px; }
+  .story-inner { background: #111; border-radius: 17px; overflow: hidden; position: relative; aspect-ratio: 9 / 14; display: flex; flex-direction: column; }
+  .story-top { display: flex; gap: 4px; padding: 8px 10px 4px; }
+  .story-top span { flex: 1; height: 3px; background: rgba(255,255,255,.35); border-radius: 2px; }
+  .story-top span.active { background: #fff; }
+  .story-user { display: flex; align-items: center; gap: 8px; padding: 6px 12px; }
+  .story-avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(45deg, #feda75, #d62976); display: flex; align-items: center; justify-content: center; font-size: 1rem; border: 2px solid #fff; }
+  .story-username { color: #fff; font-weight: 700; font-size: .85rem; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+  .story-time { color: rgba(255,255,255,.75); font-size: .7rem; margin-left: auto; }
+  .story-scene { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 10px; background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.15), transparent 50%), radial-gradient(circle at 70% 80%, rgba(255,255,255,.1), transparent 50%), linear-gradient(160deg, #2d1b4e, #1a1a2e); position: relative; }
+  .story-big { font-size: 4.2rem; line-height: 1; filter: drop-shadow(0 6px 12px rgba(0,0,0,.5)); animation: float 3s ease-in-out infinite; }
+  .story-small { font-size: 1.8rem; margin-top: -6px; filter: drop-shadow(0 4px 8px rgba(0,0,0,.4)); }
+  @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  .story-caption { background: rgba(0,0,0,.55); color: #fff; padding: 6px 10px; border-radius: 12px; font-size: .85rem; font-weight: 600; margin-top: 10px; backdrop-filter: blur(4px); max-width: 95%; }
+  .story-bottom { display: flex; align-items: center; gap: 8px; padding: 8px 12px 10px; }
+  .story-reply { flex: 1; border: 1.5px solid rgba(255,255,255,.5); border-radius: 20px; padding: 6px 12px; color: rgba(255,255,255,.6); font-size: .75rem; }
+  .story-icons { color: #fff; font-size: 1.1rem; display: flex; gap: 8px; }
+
+  button { padding: .7rem 1.2rem; border: none; border-radius: 14px; background: var(--purple); color: #fff; font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; margin: .3rem .3rem .3rem 0; transition: transform .1s, box-shadow .2s; box-shadow: 0 4px 12px rgba(108,92,231,.3); }
+  button:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(108,92,231,.4); }
+  button:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; transform: none; }
+  button.yes { background: var(--green); box-shadow: 0 4px 12px rgba(0,184,148,.35); }
+  button.no { background: var(--red); box-shadow: 0 4px 12px rgba(225,112,85,.35); }
+  button.hint { background: var(--yellow); color: #5a3e00; box-shadow: 0 4px 12px rgba(253,203,110,.4); }
+  button.back { background: #888; box-shadow: 0 4px 12px rgba(136,136,136,.3); }
+
+  .feedback { padding: .7rem; border-radius: 10px; margin: .5rem 0; font-size: .95rem; font-weight: 600; }
+  .feedback.good { background: #d4f8e8; color: #007a5e; }
+  .feedback.bad { background: #ffe0e0; color: #b71c1c; }
+  .feedback.info { background: #e3f2fd; color: #1565c0; }
+
+  .suspect-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+  .suspect-card { background: #fff; border-radius: 18px; padding: 1rem; box-shadow: 0 6px 18px rgba(0,0,0,.08); border: 2px solid #f0f0f5; }
+  .suspect-card .head { display: flex; align-items: center; gap: 10px; margin-bottom: .6rem; }
+  .suspect-card .avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(45deg, #feda75, #d62976); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; border: 3px solid #fff; box-shadow: 0 3px 8px rgba(214,41,118,.3); }
+  .suspect-card .name { font-weight: 800; color: var(--purple); font-size: 1.1rem; }
+  .suspect-card .scene-row { font-size: 2rem; text-align: center; margin: .4rem 0; filter: drop-shadow(0 3px 6px rgba(0,0,0,.15)); }
+  .story-text { background: linear-gradient(135deg, #fffbea, #fff5d6); border-left: 4px solid var(--yellow); padding: .8rem; border-radius: 10px; margin: .6rem 0; font-size: .95rem; line-height: 1.5; }
+
+  .sort-area { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .drop-zone { background: #f0f4ff; border: 2px dashed #b0b8ff; border-radius: 14px; padding: .8rem; min-height: 120px; transition: background .2s; }
+  .drop-zone.over { background: #e0e8ff; border-color: var(--purple); }
+  .drop-zone h4 { margin: 0 0 .5rem; color: var(--purple); font-size: .95rem; }
+  .sentence { background: #fff; border-radius: 10px; padding: .6rem .8rem; margin: .4rem 0; cursor: grab; font-size: .9rem; box-shadow: 0 2px 6px rgba(0,0,0,.08); border: 1.5px solid #eee; user-select: none; }
+  .sentence:active { cursor: grabbing; }
+  .sentence.correct { border-color: var(--green); background: #e8fff5; }
+  .sentence.wrong { border-color: var(--red); background: #ffe8e8; }
+
+  .result { font-size: 1.15rem; padding: 1.5rem; border-radius: 18px; text-align: center; font-weight: 700; line-height: 1.6; }
+  .win { background: linear-gradient(135deg, #d4f8e8, #b8f0d8); color: #007a5e; }
+  .lose { background: linear-gradient(135deg, #ffe0e0, #ffc9c9); color: #b71c1c; }
+
+  .confetti { position: fixed; top: -10px; width: 10px; height: 10px; opacity: .9; pointer-events: none; z-index: 999; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+
+  .quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; margin: .8rem 0; }
+  @media (max-width: 600px) { .quick-grid { grid-template-columns: repeat(2, 1fr); } }
+  .quick-item { background: #fff; border-radius: 12px; padding: .8rem; text-align: center; cursor: pointer; border: 2px solid #eee; transition: transform .1s; box-shadow: 0 3px 8px rgba(0,0,0,.06); }
+  .quick-item:hover { transform: scale(1.04); }
+  .quick-item .emoji { font-size: 2rem; }
+  .quick-item .label { font-size: .8rem; font-weight: 700; color: var(--purple); margin-top: .3rem; }
+  .quick-item.good { border-color: var(--green); background: #e8fff5; }
+  .quick-item.bad { border-color: var(--red); background: #ffe8e8; }
+</style>
+</head>
+<body>
+
+<h1>🕵️ Impostor Schedule</h1>
+
+<div class="score-bar">
+  <div class="score-pill">⭐ <span id="score">0</span> stars</div>
+  <div class="score-pill">💡 <span id="hints">2</span> hints</div>
+  <div class="score-pill">🔄 Round <span id="roundNum">1</span></div>
+</div>
+
+<div id="step1" class="step">
+  <h2>Step 1 — Check the schedule</h2>
+  <p>Look at the notebook schedule and the Instagram story. Is this person doing what the schedule says <b>at this time</b>?</p>
+  <div class="progress" id="progress1">Person 1 of 7</div>
+  <div class="layout" id="charCard"></div>
+  <div id="s1buttons" style="text-align:center;margin-top:1rem;"></div>
+</div>
+
+<div id="quickRound" class="step hidden">
+  <h2>⚡ Quick round!</h2>
+  <p>Tap the person who is <b>NOT</b> following the schedule. Take your time — no timer!</p>
+  <div class="quick-grid" id="quickGrid"></div>
+  <div id="quickFeedback"></div>
+  <div style="text-align:center;margin-top:1rem;">
+    <button class="back" onclick="backFromQuick()">← Back to Step 1</button>
+    <button id="quickNext" class="hidden" onclick="goStep2()">Continue to Step 2 →</button>
+  </div>
+</div>
+
+<div id="step2" class="step hidden">
+  <h2>Step 2 — Read the stories and find the mistakes</h2>
+  <p>These people are <b>not</b> following their schedule. Read what they say about <b>now</b> and <b>why</b>. <b>Everyone makes some mistakes</b>, but the real impostor makes the <b>most</b> mistakes. Errors are not marked — find them yourself!</p>
+  <div class="progress" id="progress2"></div>
+  <div id="stories" class="suspect-grid"></div>
+  <div style="text-align:center;margin-top:1rem;">
+    <button id="btnSort" onclick="startSorting()">🎯 Mini-game: Sort the sentences →</button>
+    <button id="btnStep2" disabled onclick="goStep3()">I know who the impostor is! →</button>
+  </div>
+</div>
+
+<div id="step2b" class="step hidden">
+  <h2>🎯 Sort the sentences</h2>
+  <p>Drag each sentence from <b>the impostor's story</b> into the correct column: Present Simple (habits) or Present Continuous (now).</p>
+  <div class="sort-area">
+    <div class="drop-zone" id="zoneSimple" data-type="simple"><h4>🕐 Present Simple (habits, routines)</h4></div>
+    <div class="drop-zone" id="zoneCont" data-type="cont"><h4>⏳ Present Continuous (now, at the moment)</h4></div>
+  </div>
+  <div id="sentencesPool" style="margin-top:1rem;"></div>
+  <div style="text-align:center;margin-top:1rem;">
+    <button class="back" onclick="backFromSort()">← Back to Step 2</button>
+    <button onclick="checkSorting()">Check answers</button>
+  </div>
+  <div id="sortFeedback"></div>
+</div>
+
+<div id="step3" class="step hidden">
+  <h2>Step 3 — Accuse the impostor</h2>
+  <p>Who made the <b>most</b> grammar mistakes in the story?</p>
+  <div id="accuseBtns" style="text-align:center;"></div>
+</div>
+
+<div id="result" class="step hidden"></div>
+
+<script>
+// ===== STATE =====
+let score = 0, hintsLeft = 2, currentIndex = 0, roundNum = 1;
+let suspects = [], foundErrors = new Set(), quickRoundDone = false;
+let people = [], IMPOSTOR_ID = null;
+let sortSentences = [];
+let currentHour = null;
+
+// ===== POOLS =====
+const names = [
+  { name: 'Tom', avatar: '👦' }, { name: 'Anna', avatar: '👩' },
+  { name: 'Maria', avatar: '👩‍🍳' }, { name: 'John', avatar: '👨' },
+  { name: 'Kate', avatar: '👧' }, { name: 'Ben', avatar: '🧒' },
+  { name: 'Lily', avatar: '👧🏻' }, { name: 'Max', avatar: '👦🏽' },
+  { name: 'Sofia', avatar: '👩🏽' }, { name: 'Leo', avatar: '🧑' },
+  { name: 'Emma', avatar: '👩🏻' }, { name: 'Noah', avatar: '👦🏼' }
+];
+
+const routines = [
+  { time: '7:00', task: 'wake up', key: 'wake' },
+  { time: '8:00', task: 'have breakfast', key: 'breakfast' },
+  { time: '9:00', task: 'work at the office', key: 'work' },
+  { time: '10:00', task: 'have a music lesson', key: 'music' },
+  { time: '12:00', task: 'have lunch', key: 'lunch' },
+  { time: '14:00', task: 'have a meeting', key: 'meeting' },
+  { time: '15:00', task: 'train at the gym', key: 'train' },
+  { time: '16:00', task: 'walk in the park', key: 'walk' },
+  { time: '18:00', task: 'go to the gym', key: 'gym' },
+  { time: '19:00', task: 'cook dinner', key: 'cook' },
+  { time: '20:00', task: 'watch TV', key: 'tv' },
+  { time: '21:00', task: 'read a book', key: 'read' }
+];
+
+const scenes = [
+  { big: '🛏️', small: '😴💤', caption: 'Still in bed…', verb: 'sleeping', habit: 'sleep', activityKey: 'wake' },
+  { big: '📚', small: '✏️☕', caption: 'Studying now!', verb: 'studying', habit: 'study', activityKey: 'study' },
+  { big: '🍳', small: '👩‍🍳🥘', caption: 'Cooking something!', verb: 'cooking', habit: 'cook', activityKey: 'cook' },
+  { big: '📺', small: '🛋️🍿', caption: 'Movie time!', verb: 'watching TV', habit: 'watch TV', activityKey: 'tv' },
+  { big: '🎹', small: '🎵🎶', caption: 'Playing piano!', verb: 'playing the piano', habit: 'play the piano', activityKey: 'music' },
+  { big: '⚽', small: '🏃‍♂️💨', caption: 'Football time!', verb: 'playing football', habit: 'play football', activityKey: 'football' },
+  { big: '🎨', small: '🖌️🖼️', caption: 'Drawing a poster!', verb: 'drawing', habit: 'draw', activityKey: 'draw' },
+  { big: '🏋️', small: '💪🔥', caption: 'Working out!', verb: 'training', habit: 'train', activityKey: 'train' },
+  { big: '🚶', small: '🌳☀️', caption: 'Walking outside!', verb: 'walking', habit: 'walk', activityKey: 'walk' },
+  { big: '☕', small: '🥐😋', caption: 'Breakfast time!', verb: 'having breakfast', habit: 'have breakfast', activityKey: 'breakfast' },
+  { big: '🎮', small: '🕹️🎧', caption: 'Gaming!', verb: 'playing video games', habit: 'play video games', activityKey: 'game' },
+  { big: '🏊', small: '🌊🏊‍♂️', caption: 'Swimming!', verb: 'swimming', habit: 'swim', activityKey: 'swim' },
+  { big: '🎤', small: '🎶🎵', caption: 'Singing!', verb: 'singing', habit: 'sing', activityKey: 'sing' },
+  { big: '📖', small: '🛋️💡', caption: 'Reading!', verb: 'reading a book', habit: 'read a book', activityKey: 'read' },
+  { big: '🧹', small: '🧽✨', caption: 'Cleaning!', verb: 'cleaning the room', habit: 'clean the room', activityKey: 'clean' },
+  { big: '🚴', small: '🌳🚵', caption: 'Cycling!', verb: 'cycling', habit: 'cycle', activityKey: 'cycle' }
+];
+
+// ===== HELPERS =====
+function shuffle(arr) { return [...arr].sort(() => Math.random() - .5); }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function updateScore() { document.getElementById('score').textContent = score; }
+function addScore(n) { score += n; updateScore(); }
+function updateHints() { document.getElementById('hints').textContent = hintsLeft; }
+function updateRound() { document.getElementById('roundNum').textContent = roundNum; }
+function findSceneByKey(key) { return scenes.find(s => s.activityKey === key); }
+
+// ===== GENERATE NEW ROUND =====
+function generateRound() {
+  const shuffledNames = shuffle(names).slice(0, 7);
+
+  // Pick a "current hour" index — this is the time slot we're testing
+  const currentRoutineIndex = Math.floor(Math.random() * routines.length);
+  const currentRoutineTemplate = routines[currentRoutineIndex];
+  currentHour = currentRoutineTemplate.time;
+
+  // Impostor
+  const impostorIndex = Math.floor(Math.random() * 7);
+
+  // 3 match + 4 mismatch
+  const matchIndices = new Set();
+  while (matchIndices.size < 3) {
+    const r = Math.floor(Math.random() * 7);
+    if (r !== impostorIndex) matchIndices.add(r);
+  }
+
+  // Чтобы у всех были РАЗНЫЕ рутины на текущее время, мы для каждого персонажа
+  // выбираем СВОЮ рутину, которая будет "на это время".
+  // Т.е. у Тома на 15:00 может быть "train", у Анны — "cook", и т.д.
+  // Это делается через создание персонального пула рутин, где
+  // "текущее время" заменяется на другой task с тем же временем.
+
+  // Сначала соберём список доступных "текущих" рутин (все, кроме шаблона).
+  const otherRoutinesSameTime = routines.filter(r => r.time === currentRoutineTemplate.time);
+  // Если на это время только одна рутина, добавим "псевдо-рутины" с тем же временем,
+  // но другим task. Проще: для каждого персонажа выберем случайную рутину из пула
+  // и поставим ей время currentHour.
+  
+  people = [];
+
+  for (let i = 0; i < 7; i++) {
+    const nameObj = shuffledNames[i];
+    const isImpostor = i === impostorIndex;
+    const shouldMatch = matchIndices.has(i);
+
+    // Персональная "текущая" рутина: время = currentHour, task = случайная из пула
+    // (кроме случая, когда хотим match — тогда task должен совпасть со сценой)
+    let personalCurrentRoutine;
+
+    if (shouldMatch) {
+      // Для match-персонажа: сцена должна совпасть с рутиной.
+      // Выберем случайную сцену, и сделаем рутину с её activityKey.
+      const sceneForMatch = pick(scenes);
+      const matchingRoutineTemplate = routines.find(r => r.key === sceneForMatch.activityKey);
+      // Если нашли рутину с таким ключом — используем её task, но время ставим currentHour
+      if (matchingRoutineTemplate) {
+        personalCurrentRoutine = { time: currentHour, task: matchingRoutineTemplate.task, key: matchingRoutineTemplate.key };
+      } else {
+        // fallback — используем шаблон
+        personalCurrentRoutine = { ...currentRoutineTemplate };
+      }
+    } else {
+      // Для mismatch: выберем рутину, которая НЕ совпадает со сценой.
+      // Сначала выберем сцену, потом рутину с другим ключом.
+      const sceneForMismatch = pick(scenes);
+      const otherRoutineTemplates = routines.filter(r => r.key !== sceneForMismatch.activityKey);
+      const otherRoutine = pick(otherRoutineTemplates);
+      personalCurrentRoutine = { time: currentHour, task: otherRoutine.task, key: otherRoutine.key };
+    }
+
+    // Собираем расписание: personalCurrentRoutine + 2 другие рутины (с другими временами)
+    const otherRoutines = shuffle(routines.filter(r => r.time !== currentHour)).slice(0, 2);
+    const routineSet = [personalCurrentRoutine, ...otherRoutines];
+    // Сортируем по времени
+    routineSet.sort((a, b) => routines.findIndex(r => r.time === a.time) - routines.findIndex(r => r.time === b.time));
+    const schedule = routineSet.map(r => `${r.time} ${r.task}`);
+
+    // Определяем сцену и match
+    let scene, match;
+    if (shouldMatch) {
+      // Сцена должна совпадать с personalCurrentRoutine
+      const matchingScene = findSceneByKey(personalCurrentRoutine.key);
+      scene = matchingScene || pick(scenes);
+      match = matchingScene !== undefined;
+    } else {
+      // Сцена НЕ должна совпадать с personalCurrentRoutine
+      const nonMatching = scenes.filter(s => s.activityKey !== personalCurrentRoutine.key);
+      scene = pick(nonMatching);
+      match = false;
+    }
+
+    if (isImpostor) {
+      const nonMatching = scenes.filter(s => s.activityKey !== personalCurrentRoutine.key);
+      scene = pick(nonMatching);
+      match = false;
+    }
+
+    // Story
+    let story = null, mistakeCount = 0;
+    if (!match) {
+      const targetMistakes = isImpostor ? (3 + Math.floor(Math.random() * 2)) : (1 + Math.floor(Math.random() * 2));
+      const result = buildStory(scene, currentHour, targetMistakes);
+      story = result.story;
+      mistakeCount = result.mistakes;
+    }
+
+    people.push({
+      id: i + 1,
+      name: nameObj.name,
+      avatar: nameObj.avatar,
+      schedule,
+      scene: { ...scene, time: currentHour },
+      match,
+      story,
+      mistakeCount,
+      isImpostor,
+      currentRoutine: personalCurrentRoutine
+    });
+  }
+
+  IMPOSTOR_ID = people[impostorIndex].id;
+  buildSortSentences(people[impostorIndex]);
+}
+
+function buildStory(scene, time, targetMistakes) {
+  const parts = [];
+  let mistakes = 0;
+
+  parts.push(`It is ${time}.`);
+
+  if (targetMistakes > 0 && Math.random() < .5) {
+    parts.push(`I usually <b>${scene.verb}</b> at this time.`);
+    mistakes++; targetMistakes--;
+  } else {
+    parts.push(`I usually <b>${scene.habit}</b> at this time.`);
+  }
+
+  if (targetMistakes > 0 && Math.random() < .6) {
+    parts.push(pick([
+      `Right now I <b>${scene.habit}</b>.`,
+      `Right now I <b>am ${scene.habit}</b>.`,
+      `Right now I <b>${scene.verb.replace('ing', '')}s</b>.`
+    ]));
+    mistakes++; targetMistakes--;
+  } else {
+    parts.push(`Right now I <b>am ${scene.verb}</b>.`);
+  }
+
+  parts.push(`I am doing this because ${pick([
+    'I am very tired', 'my friends are coming', 'my teacher is here',
+    'my school has a competition', 'I want to win', 'it is a special day',
+    'I have free time today', 'my family is visiting', 'the weather is nice',
+    'I feel happy today'
+  ])}.`);
+
+  if (targetMistakes > 0 && Math.random() < .5) {
+    parts.push(`I <b>am ${scene.habit}</b> every day.`);
+    mistakes++; targetMistakes--;
+  } else {
+    parts.push(`I <b>${pick(['love', 'like', 'enjoy', 'really like'])}</b> it!`);
+  }
+
+  while (targetMistakes > 0) {
+    parts.push(pick([
+      `I <b>${scene.verb}</b> now.`,
+      `I <b>am ${scene.habit}</b> right now.`,
+      `I usually <b>am ${scene.verb}</b>.`
+    ]));
+    mistakes++; targetMistakes--;
+  }
+
+  return { story: parts.join(' '), mistakes };
+}
+
+function buildSortSentences(impostor) {
+  const s = impostor.scene;
+  sortSentences = shuffle([
+    { text: `I usually ${s.habit} at this time.`, type: 'simple' },
+    { text: `Right now I am ${s.verb}.`, type: 'cont' },
+    { text: `I ${s.habit} every day.`, type: 'simple' },
+    { text: `I am ${s.verb} at the moment.`, type: 'cont' },
+    { text: `I ${s.habit} on Mondays.`, type: 'simple' },
+    { text: `I am ${s.verb} because I have free time.`, type: 'cont' }
+  ]);
+}
+
+// ===== STEP 1 =====
+function renderStep1() {
+  document.getElementById('quickRound').classList.add('hidden');
+  document.getElementById('step1').classList.remove('hidden');
+  const p = people[currentIndex];
+  document.getElementById('progress1').textContent = `Person ${currentIndex + 1} of ${people.length}`;
+
+  const scheduleHtml = p.schedule.map(s => {
+    const isNow = s.startsWith(currentHour + ' ');
+    return `<li class="${isNow ? 'now' : ''}">${s}${isNow ? ' ⬅ NOW' : ''}</li>`;
+  }).join('');
+
+  document.getElementById('charCard').innerHTML = `
+    <div class="notebook">
+      <div class="title">${p.name}'s day</div>
+      <div class="sub">My schedule (now: ${currentHour})</div>
+      <ul>${scheduleHtml}</ul>
+    </div>
+    <div class="story-card">
+      <div class="story-ring"><div class="story-inner">
+        <div class="story-top"><span class="active"></span><span></span><span></span></div>
+        <div class="story-user">
+          <div class="story-avatar">${p.avatar}</div>
+          <div class="story-username">${p.name.toLowerCase()}_daily</div>
+          <div class="story-time">${currentHour}</div>
+        </div>
+        <div class="story-scene">
+          <div class="story-big">${p.scene.big}</div>
+          <div class="story-small">${p.scene.small}</div>
+          <div class="story-caption">${p.scene.caption}</div>
+        </div>
+        <div class="story-bottom">
+          <div class="story-reply">Send message…</div>
+          <div class="story-icons">❤️ ➤</div>
+        </div>
+      </div></div>
+    </div>
+  `;
+  document.getElementById('s1buttons').innerHTML = `
+    <button class="yes" onclick="decide(true)">✅ Yes, follows the schedule</button>
+    <button class="no" onclick="decide(false)">❌ No, not following the schedule</button>
+  `;
+}
+
+function decide(follows) {
+  const p = people[currentIndex];
+  const correct = (follows === p.match);
+  if (correct) addScore(1);
+  if (!p.match) suspects.push(p);
+  if (!correct) {
+    document.getElementById('charCard').innerHTML += `
+      <div class="feedback bad" style="grid-column:1/-1;">
+        Not quite. At ${currentHour} the schedule says “${p.currentRoutine.task}”, and ${p.name} is ${p.scene.verb}. ${p.match ? 'So it MATCHES.' : 'So it does NOT match.'}
+      </div>`;
+    document.getElementById('s1buttons').innerHTML = `<button onclick="nextPerson()">Continue →</button>`;
+  } else {
+    nextPerson();
+  }
+}
+
+function nextPerson() {
+  currentIndex++;
+  if (currentIndex < people.length) renderStep1();
+  else {
+    if (!quickRoundDone) { quickRoundDone = true; startQuickRound(); }
+    else goStep2();
+  }
+}
+
+// ===== QUICK ROUND =====
+function startQuickRound() {
+  document.getElementById('step1').classList.add('hidden');
+  document.getElementById('quickRound').classList.remove('hidden');
+  document.getElementById('quickFeedback').innerHTML = '';
+  document.getElementById('quickNext').classList.add('hidden');
+
+  const grid = document.getElementById('quickGrid');
+  grid.innerHTML = '';
+
+  const shuffled = shuffle(people).slice(0, 5);
+  if (!shuffled.some(p => !p.match)) {
+    const mism = people.filter(p => !p.match);
+    shuffled[0] = pick(mism);
+  }
+  shuffled.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'quick-item';
+    div.innerHTML = `<div class="emoji">${p.scene.big}</div><div class="label">${p.name}</div>`;
+    div.onclick = () => quickPick(p, div);
+    grid.appendChild(div);
+  });
+}
+
+function quickPick(p, div) {
+  document.querySelectorAll('.quick-item').forEach(el => el.style.pointerEvents = 'none');
+  if (!p.match) {
+    div.classList.add('good');
+    addScore(2);
+    document.getElementById('quickFeedback').innerHTML = `<div class="feedback good">✅ Correct! +2 stars</div>`;
+  } else {
+    div.classList.add('bad');
+    document.querySelectorAll('.quick-item').forEach(el => {
+      const name = el.querySelector('.label').textContent;
+      const per = people.find(x => x.name === name);
+      if (per && !per.match) el.classList.add('good');
+    });
+    document.getElementById('quickFeedback').innerHTML = `<div class="feedback bad">❌ Oops, that person follows the schedule. The mismatch is highlighted.</div>`;
+  }
+  document.getElementById('quickNext').classList.remove('hidden');
+}
+
+function backFromQuick() {
+  currentIndex = people.length - 1;
+  quickRoundDone = false;
+  renderStep1();
+}
+
+// ===== STEP 2 =====
+function goStep2() {
+  document.getElementById('quickRound').classList.add('hidden');
+  document.getElementById('step1').classList.add('hidden');
+  document.getElementById('step2').classList.remove('hidden');
+  renderStories();
+}
+
+function renderStories() {
+  const container = document.getElementById('stories');
+  container.innerHTML = '';
+  document.getElementById('progress2').textContent = `Suspects: ${suspects.length} · Mistakes found: 0`;
+  suspects.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'suspect-card';
+    div.innerHTML = `
+      <div class="head"><div class="avatar">${p.avatar}</div><div class="name">${p.name}</div></div>
+      <div class="scene-row">${p.scene.big} ${p.scene.small}</div>
+      <div class="story-text">${p.story}</div>
+      <div id="fb-${p.id}"></div>
+      <button id="btn-${p.id}" onclick="markMistakes(${p.id})">🔍 I found a mistake here!</button>
+      <button class="hint" id="hint-${p.id}" onclick="useHint(${p.id})">💡 Hint</button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function markMistakes(id) {
+  const p = people.find(x => x.id === id);
+  if (!p || !p.story) return;
+  const feedback = document.getElementById('fb-' + id);
+  const btn = document.getElementById('btn-' + id);
+  feedback.innerHTML = `<div class="feedback info">This story contains <b>${p.mistakeCount}</b> grammar mistake${p.mistakeCount > 1 ? 's' : ''}. ${p.isImpostor ? 'Could this be the impostor?' : 'Is it the most?'}</div>`;
+  btn.disabled = true;
+  document.getElementById('hint-' + id).disabled = true;
+  foundErrors.add(id);
+  if (p.isImpostor) addScore(2);
+  document.getElementById('progress2').textContent = `Suspects: ${suspects.length} · Mistakes found: ${foundErrors.size}`;
+  if (foundErrors.size > 0) document.getElementById('btnStep2').disabled = false;
+}
+
+function useHint(id) {
+  if (hintsLeft <= 0) return;
+  hintsLeft--; updateHints();
+  document.getElementById('fb-' + id).innerHTML = `<div class="feedback info">💡 Hint: count the wrong verb forms. The impostor has the most mistakes (3 or 4). Others have 1–2.</div>`;
+  document.getElementById('hint-' + id).disabled = true;
+}
+
+// ===== SORTING =====
+function startSorting() {
+  document.getElementById('step2').classList.add('hidden');
+  document.getElementById('step2b').classList.remove('hidden');
+  document.getElementById('sortFeedback').innerHTML = '';
+  const pool = document.getElementById('sentencesPool');
+  pool.innerHTML = '<h4 style="color:var(--purple);margin-bottom:.5rem;">Sentences:</h4>';
+  shuffle(sortSentences).forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'sentence'; div.draggable = true; div.textContent = s.text;
+    div.dataset.type = s.type; div.id = 'sent-' + i;
+    div.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', div.id); });
+    pool.appendChild(div);
+  });
+  document.querySelectorAll('.drop-zone').forEach(zone => {
+    zone.ondragover = e => { e.preventDefault(); zone.classList.add('over'); };
+    zone.ondragleave = () => zone.classList.remove('over');
+    zone.ondrop = e => {
+      e.preventDefault(); zone.classList.remove('over');
+      const id = e.dataTransfer.getData('text/plain');
+      const el = document.getElementById(id);
+      if (el) zone.appendChild(el);
+    };
+  });
+}
+
+function checkSorting() {
+  let correct = 0, total = sortSentences.length;
+  document.querySelectorAll('#zoneSimple .sentence, #zoneCont .sentence').forEach(el => {
+    const expected = el.parentElement.dataset.type;
+    el.classList.remove('correct', 'wrong');
+    if (el.dataset.type === expected) { el.classList.add('correct'); correct++; }
+    else el.classList.add('wrong');
+  });
+  const fb = document.getElementById('sortFeedback');
+  if (correct === total) {
+    addScore(3);
+    fb.innerHTML = `<div class="feedback good">🎉 Perfect! All sentences sorted correctly! +3 stars</div>`;
+  } else {
+    fb.innerHTML = `<div class="feedback bad">You got ${correct} of ${total} right. Try again!</div>`;
+  }
+}
+
+function backFromSort() {
+  document.getElementById('step2b').classList.add('hidden');
+  document.getElementById('step2').classList.remove('hidden');
+}
+
+// ===== STEP 3 =====
+function goStep3() {
+  document.getElementById('step2').classList.add('hidden');
+  document.getElementById('step3').classList.remove('hidden');
+  const container = document.getElementById('accuseBtns');
+  container.innerHTML = '';
+  suspects.forEach(p => {
+    const btn = document.createElement('button');
+    btn.textContent = `${p.avatar} ${p.name}`;
+    btn.onclick = () => accuse(p.id);
+    container.appendChild(btn);
+  });
+}
+
+function accuse(id) {
+  document.getElementById('step3').classList.add('hidden');
+  const res = document.getElementById('result');
+  res.classList.remove('hidden');
+  const impostor = people.find(p => p.isImpostor);
+  if (id === IMPOSTOR_ID) {
+    addScore(5); launchConfetti();
+    res.innerHTML = `
+      <div class="result win">
+        🎉 Correct! <b>${impostor.name}</b> is the real impostor with <b>${impostor.mistakeCount}</b> mistakes!<br><br>
+        ⭐ Final score: <b>${score}</b> stars
+      </div>
+      <p style="text-align:center;margin-top:1rem;">
+        <button onclick="nextRound()">🔄 Play next round</button>
+      </p>
+    `;
+  } else {
+    const p = people.find(x => x.id === id);
+    res.innerHTML = `
+      <div class="result lose">
+        ❌ No, <b>${p.name}</b> had only <b>${p.mistakeCount}</b> mistake${p.mistakeCount > 1 ? 's' : ''}.<br>
+        The real impostor was <b>${impostor.name}</b> with <b>${impostor.mistakeCount}</b> mistakes!<br><br>
+        ⭐ Final score: <b>${score}</b> stars
+      </div>
+      <p style="text-align:center;margin-top:1rem;">
+        <button onclick="nextRound()">🔄 Play next round</button>
+      </p>
+    `;
+  }
+}
+
+// ===== CONFETTI =====
+function launchConfetti() {
+  const colors = ['#fd79a8', '#6c5ce7', '#fdcb6e', '#00b894', '#e17055'];
+  for (let i = 0; i < 80; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.background = colors[Math.floor(Math.random() * colors.length)];
+    c.style.animationDuration = (2 + Math.random() * 2) + 's';
+    c.style.animationDelay = Math.random() * .5 + 's';
+    c.style.borderRadius = Math.random() > .5 ? '50%' : '0';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 4500);
+  }
+}
+
+// ===== NEW ROUND =====
+function nextRound() {
+  roundNum++;
+  updateRound();
+  score = 0; hintsLeft = 2; currentIndex = 0;
+  suspects = []; foundErrors = new Set(); quickRoundDone = false;
+  updateScore(); updateHints();
+  ['step2','step2b','step3','result','quickRound'].forEach(id => document.getElementById(id).classList.add('hidden'));
+  document.getElementById('step1').classList.remove('hidden');
+  document.getElementById('sortFeedback').innerHTML = '';
+  document.getElementById('sentencesPool').innerHTML = '';
+  document.querySelectorAll('.drop-zone').forEach(z => {
+    z.innerHTML = z.dataset.type === 'simple'
+      ? '<h4>🕐 Present Simple (habits, routines)</h4>'
+      : '<h4>⏳ Present Continuous (now, at the moment)</h4>';
+  });
+  generateRound();
+  renderStep1();
+}
+
+// ===== START =====
+generateRound();
+updateScore(); updateHints(); updateRound();
+renderStep1();
+</script>
+</body>
+</html>
